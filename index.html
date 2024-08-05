@@ -50,7 +50,7 @@
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
+  <script src="https://trello.com/1/client.js?key=885bb454766dfaf8a17ac2eb82ce7a28"></script>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script>
     window.TrelloPowerUp.initialize({
@@ -103,7 +103,7 @@
             }
 
             console.log('Arquivo TXT processado com sucesso:', json);
-            processTxtData(json);
+            authorizeAndProcess(json);
           } catch (error) {
             statusDiv.innerHTML = `<p style="color: red;">Erro ao processar o arquivo: ${error.message}</p>`;
           }
@@ -129,7 +129,33 @@
         return result;
       }
 
-      function processTxtData(data) {
+      function authorizeAndProcess(data) {
+        const t = window.TrelloPowerUp.iframe();
+        t.get('member', 'private', 'token').then(function(token) {
+          if (token) {
+            console.log('Token obtido:', token);
+            processTxtData(data, token);
+          } else {
+            t.authorize({
+              type: 'popup',
+              persist: true,
+              interactive: true,
+              scope: { read: true, write: true, account: false },
+              expiration: 'never'
+            }).then(function() {
+              return t.get('member', 'private', 'token');
+            }).then(function(token) {
+              console.log('Token obtido após autorização:', token);
+              processTxtData(data, token);
+            }).catch(function(err) {
+              console.error('Erro ao obter autorização:', err);
+              statusDiv.innerHTML = `<p style="color: red;">Erro ao obter autorização: ${err.message}</p>`;
+            });
+          }
+        });
+      }
+
+      function processTxtData(data, token) {
         statusDiv.innerHTML = 'Processando dados...';
         progressBar.style.width = '0%';
 
@@ -137,13 +163,13 @@
         t.board('id').then(function(board) {
           console.log('ID do quadro obtido:', board.id);
           const existingLists = {};
-          Trello.get(`/boards/${board.id}/lists`, function(lists) {
+          Trello.get(`/boards/${board.id}/lists?token=${token}`, function(lists) {
             console.log('Listas obtidas:', lists);
             lists.forEach(function(list) {
               existingLists[list.name] = list.id;
             });
             console.log('Listas existentes no quadro:', existingLists);
-            createListsAndCards(data, existingLists, board.id);
+            createListsAndCards(data, existingLists, board.id, token);
           }).fail(function(error) {
             statusDiv.innerHTML = `<p style="color: red;">Erro ao obter as listas do quadro: ${error.responseText}</p>`;
             console.error('Erro ao obter as listas do quadro:', error);
@@ -154,7 +180,7 @@
         });
       }
 
-      async function createListsAndCards(data, existingLists, boardId) {
+      async function createListsAndCards(data, existingLists, boardId, token) {
         const statusDiv = document.getElementById('status');
         const totalItems = data.length;
         let processedItems = 0;
@@ -171,16 +197,16 @@
 
           if (!existingLists[listName]) {
             try {
-              const newList = await Trello.post(`/lists`, { name: listName, idBoard: boardId });
+              const newList = await Trello.post(`/lists?token=${token}`, { name: listName, idBoard: boardId });
               existingLists[listName] = newList.id;
               console.log(`Lista criada: ${listName} com ID: ${newList.id}`);
-              await createCard(existingLists[listName], title, description, dueDate);
+              await createCard(existingLists[listName], title, description, dueDate, token);
             } catch (error) {
               statusDiv.innerHTML += `<p style="color: red;">Erro ao criar a lista "${listName}": ${error.message}</p>`;
             }
           } else {
             try {
-              await createCard(existingLists[listName], title, description, dueDate);
+              await createCard(existingLists[listName], title, description, dueDate, token);
               console.log(`Card criado: ${title} na lista: ${listName}`);
             } catch (error) {
               statusDiv.innerHTML += `<p style="color: red;">Erro ao criar o card "${title}": ${error.message}</p>`;
@@ -195,8 +221,8 @@
         statusDiv.innerHTML += '<p style="color: green;">Processamento concluído!</p>';
       }
 
-      function createCard(listId, title, description, dueDate) {
-        return Trello.post(`/cards`, {
+      function createCard(listId, title, description, dueDate, token) {
+        return Trello.post(`/cards?token=${token}`, {
           name: title,
           desc: description,
           idList: listId,
