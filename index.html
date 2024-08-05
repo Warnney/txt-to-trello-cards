@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TXT to Trello Cards</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      margin: 20px;
+    }
+    .file-input {
+      margin-bottom: 10px;
+    }
+    .button {
+      padding: 10px 20px;
+      background-color: #0079bf;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .status {
+      margin-top: 20px;
+    }
+    .status p {
+      margin: 5px 0;
+    }
+    .progress {
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    .progress-bar {
+      width: 0;
+      height: 20px;
+      background-color: #4caf50;
+      text-align: center;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TXT to Trello Cards</h1>
+    <input type="file" id="fileInput" class="file-input" />
+    <button id="uploadButton" class="button">Upload TXT</button>
+    <div class="progress">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script>
+    window.TrelloPowerUp.initialize({
+      'board-buttons': function(t, options) {
+        return [{
+          icon: 'https://example.com/icon.png',
+          text: 'Upload TXT',
+          callback: function(t) {
+            return t.popup({
+              title: 'Upload TXT',
+              url: 'https://seu-usuario.netlify.app/' // ou Vercel
+            });
+          }
+        }];
+      },
+      'authorization-status': function(t) {
+        return t.get('member', 'private', 'token').then(function(token) {
+          return { authorized: token !== null };
+        });
+      },
+      'show-settings': function(t) {
+        return t.popup({
+          title: 'Settings',
+          url: 'https://seu-usuario.netlify.app/settings.html', // ou Vercel
+          height: 184
+        });
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const statusDiv = document.getElementById('status');
+      const progressBar = document.getElementById('progressBar');
+      
+      document.getElementById('uploadButton').addEventListener('click', function() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+          alert('Por favor, selecione um arquivo TXT.');
+          return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const txt = e.target.result;
+            const json = txtToJson(txt);
+
+            if (json.length === 0) {
+              throw new Error('O arquivo TXT está vazio.');
+            }
+
+            processTxtData(json);
+          } catch (error) {
+            statusDiv.innerHTML = `<p style="color: red;">Erro ao processar o arquivo: ${error.message}</p>`;
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      function txtToJson(txt) {
+        const lines = txt.split("\n");
+        const result = [];
+        const headers = lines[0].split("\t");
+
+        for (let i = 1; i < lines.length; i++) {
+          const obj = {};
+          const currentline = lines[i].split("\t");
+
+          for (let j = 0; j < headers.length; j++) {
+            obj[headers[j]] = currentline[j];
+          }
+
+          result.push(obj);
+        }
+        return result;
+      }
+
+      function processTxtData(data) {
+        statusDiv.innerHTML = 'Processando dados...';
+        progressBar.style.width = '0%';
+
+        const t = window.TrelloPowerUp.iframe();
+        t.board('id').then(function(board) {
+          const existingLists = {};
+          Trello.get(`/boards/${board.id}/lists`, function(lists) {
+            lists.forEach(function(list) {
+              existingLists[list.name] = list.id;
+            });
+            createListsAndCards(data, existingLists, board.id);
+          });
+        });
+      }
+
+      async function createListsAndCards(data, existingLists, boardId) {
+        const statusDiv = document.getElementById('status');
+        const totalItems = data.length;
+        let processedItems = 0;
+
+        for (const item of data) {
+          if (!item['Lista']) continue;  // Skip if 'Lista' is empty
+          
+          const listName = item['Lista'];
+          const title = item['Titulo'];
+          const description = item['Descricao'];
+          const dueDate = item['Data_entrega'];
+
+          if (!existingLists[listName]) {
+            try {
+              const newList = await Trello.post(`/lists`, { name: listName, idBoard: boardId });
+              existingLists[listName] = newList.id;
+              await createCard(existingLists[listName], title, description, dueDate);
+            } catch (error) {
+              statusDiv.innerHTML += `<p style="color: red;">Erro ao criar a lista "${listName}": ${error.message}</p>`;
+            }
+          } else {
+            try {
+              await createCard(existingLists[listName], title, description, dueDate);
+            } catch (error) {
+              statusDiv.innerHTML += `<p style="color: red;">Erro ao criar o card "${title}": ${error.message}</p>`;
+            }
+          }
+
+          processedItems++;
+          const progress = (processedItems / totalItems) * 100;
+          progressBar.style.width = `${progress}%`;
+        }
+
+        statusDiv.innerHTML += '<p style="color: green;">Processamento concluído!</p>';
+      }
+
+      function createCard(listId, title, description, dueDate) {
+        return Trello.post(`/cards`, {
+          name: title,
+          desc: description,
+          idList: listId,
+          due: dueDate
+        }).then(card => {
+          console.log(`Card "${title}" criado com sucesso!`);
+        }).catch(error => {
+          console.error(`Erro ao criar o card "${title}":`, error);
+          throw error;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

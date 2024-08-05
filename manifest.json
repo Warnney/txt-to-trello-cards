@@ -1,0 +1,22 @@
+{
+    "name": "TXT to Trello Cards",
+    "description": "Transforme uma tabela TXT em listas e cards do Trello",
+    "author": "Seu Nome",
+    "icon": {
+      "url": "https://example.com/icon.png"
+    },
+    "capabilities": [
+      "board-buttons",
+      "authorization-status",
+      "show-settings"
+    ],
+    "connectors": {
+      "iframe": {
+        "url": "https://seu-usuario.netlify.app/" // ou Vercel
+      }
+    },
+    "app": {
+      "origin": "https://seu-usuario.netlify.app" // ou Vercel
+    }
+  }
+  
