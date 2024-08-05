@@ -138,16 +138,19 @@
           console.log('ID do quadro obtido:', board.id);
           const existingLists = {};
           Trello.get(`/boards/${board.id}/lists`, function(lists) {
+            console.log('Listas obtidas:', lists);
             lists.forEach(function(list) {
               existingLists[list.name] = list.id;
             });
             console.log('Listas existentes no quadro:', existingLists);
             createListsAndCards(data, existingLists, board.id);
-          }).catch(function(error) {
-            statusDiv.innerHTML = `<p style="color: red;">Erro ao obter as listas do quadro: ${error.message}</p>`;
+          }).fail(function(error) {
+            statusDiv.innerHTML = `<p style="color: red;">Erro ao obter as listas do quadro: ${error.responseText}</p>`;
+            console.error('Erro ao obter as listas do quadro:', error);
           });
         }).catch(function(error) {
           statusDiv.innerHTML = `<p style="color: red;">Erro ao obter o ID do quadro: ${error.message}</p>`;
+          console.error('Erro ao obter o ID do quadro:', error);
         });
       }
 
