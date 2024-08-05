@@ -102,6 +102,7 @@
               throw new Error('O arquivo TXT está vazio.');
             }
 
+            console.log('Arquivo TXT processado com sucesso:', json);
             processTxtData(json);
           } catch (error) {
             statusDiv.innerHTML = `<p style="color: red;">Erro ao processar o arquivo: ${error.message}</p>`;
@@ -134,13 +135,19 @@
 
         const t = window.TrelloPowerUp.iframe();
         t.board('id').then(function(board) {
+          console.log('ID do quadro obtido:', board.id);
           const existingLists = {};
           Trello.get(`/boards/${board.id}/lists`, function(lists) {
             lists.forEach(function(list) {
               existingLists[list.name] = list.id;
             });
+            console.log('Listas existentes no quadro:', existingLists);
             createListsAndCards(data, existingLists, board.id);
+          }).catch(function(error) {
+            statusDiv.innerHTML = `<p style="color: red;">Erro ao obter as listas do quadro: ${error.message}</p>`;
           });
+        }).catch(function(error) {
+          statusDiv.innerHTML = `<p style="color: red;">Erro ao obter o ID do quadro: ${error.message}</p>`;
         });
       }
 
@@ -157,10 +164,13 @@
           const description = item['Descricao'];
           const dueDate = item['Data_entrega'];
 
+          console.log(`Processando item: ${title} na lista: ${listName}`);
+
           if (!existingLists[listName]) {
             try {
               const newList = await Trello.post(`/lists`, { name: listName, idBoard: boardId });
               existingLists[listName] = newList.id;
+              console.log(`Lista criada: ${listName} com ID: ${newList.id}`);
               await createCard(existingLists[listName], title, description, dueDate);
             } catch (error) {
               statusDiv.innerHTML += `<p style="color: red;">Erro ao criar a lista "${listName}": ${error.message}</p>`;
@@ -168,6 +178,7 @@
           } else {
             try {
               await createCard(existingLists[listName], title, description, dueDate);
+              console.log(`Card criado: ${title} na lista: ${listName}`);
             } catch (error) {
               statusDiv.innerHTML += `<p style="color: red;">Erro ao criar o card "${title}": ${error.message}</p>`;
             }
