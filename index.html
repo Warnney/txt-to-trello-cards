@@ -61,7 +61,7 @@
           callback: function(t) {
             return t.popup({
               title: 'Upload TXT',
-              url: 'https://seu-usuario.netlify.app/' // ou Vercel
+              url: 'https://txttotrello.netlify.app/'
             });
           }
         }];
@@ -74,7 +74,7 @@
       'show-settings': function(t) {
         return t.popup({
           title: 'Settings',
-          url: 'https://seu-usuario.netlify.app/settings.html', // ou Vercel
+          url: 'https://txttotrello.netlify.app/settings.html',
           height: 184
         });
       }
@@ -194,7 +194,4 @@
           throw error;
         });
       }
-    });
-  </script>
-</body>
-</html>
+    })
