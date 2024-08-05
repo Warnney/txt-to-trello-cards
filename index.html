@@ -143,15 +143,19 @@
             console.log('Token obtido:', token);
             processTxtData(data, token);
           } else {
-            t.authorize({
-              height: 680,
-              interactive: true,
+            t.popup({
+              title: 'Authorize Trello',
               url: 'https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28',
-              validToken: function() {
-                return t.set('member', 'private', 'token', token).then(function() {
-                  processTxtData(data, token);
-                });
-              }
+              height: 680
+            }).then(function() {
+              t.get('member', 'private', 'token').then(function(newToken) {
+                if (newToken) {
+                  console.log('Token obtido após autorização:', newToken);
+                  processTxtData(data, newToken);
+                } else {
+                  statusDiv.innerHTML = `<p style="color: red;">Erro ao obter autorização: Token não foi obtido após a autorização.</p>`;
+                }
+              });
             });
           }
         }).catch(function(err) {
@@ -186,7 +190,6 @@
       }
 
       async function createListsAndCards(data, existingLists, boardId, token) {
-        const statusDiv = document.getElementById('status');
         const totalItems = data.length;
         let processedItems = 0;
 
@@ -223,7 +226,7 @@
           progressBar.style.width = `${progress}%`;
         }
 
-        statusDiv.innerHTML += '<p style="color: green;">Processamento concluído!</p>';
+        document.getElementById('status').innerHTML += '<p style="color: green;">Processamento concluído!</p>';
       }
 
       function createCard(listId, title, description, dueDate, token) {
@@ -234,6 +237,8 @@
           due: dueDate
         }).then(card => {
           console.log(`Card "${title}" criado com sucesso!`);
+        }).catch(error => {
+          console.error(`Erro ao criar o card "${title}":`, error
         }).catch(error => {
           console.error(`Erro ao criar o card "${title}":`, error);
           throw error;
