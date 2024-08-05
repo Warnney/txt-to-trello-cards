@@ -71,6 +71,13 @@
           return { authorized: token !== null };
         });
       },
+      'show-authorization': function(t) {
+        return t.popup({
+          title: 'Authorize Trello',
+          url: 'https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28',
+          height: 680
+        });
+      },
       'show-settings': function(t) {
         return t.popup({
           title: 'Settings',
