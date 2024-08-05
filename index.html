@@ -143,14 +143,14 @@
             console.log('Token obtido:', token);
             processTxtData(data, token);
           } else {
-            t.popup({
-              title: 'Authorize Trello',
-              url: 'https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28',
+            t.authorize({
               height: 680,
-              callback: function(context) {
-                const token = context.token;
-                t.set('member', 'private', 'token', token);
-                processTxtData(data, token);
+              interactive: true,
+              url: 'https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28',
+              validToken: function() {
+                return t.set('member', 'private', 'token', token).then(function() {
+                  processTxtData(data, token);
+                });
               }
             });
           }
