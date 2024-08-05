@@ -1,13 +1,14 @@
 {
   "name": "TXT to Trello Cards",
-  "description": "Transforme uma tabela TXT em listas e cards do Trello",
-  "author": "Seu Nome",
+  "description": "Transforme arquivos TXT em cartões do Trello.",
   "icon": {
     "url": "https://example.com/icon.png"
   },
+  "author": "Warnney Machado",
   "capabilities": [
     "board-buttons",
     "authorization-status",
+    "show-authorization",
     "show-settings"
   ],
   "connectors": {
@@ -15,7 +16,8 @@
       "url": "https://txttotrello.netlify.app/"
     }
   },
-  "app": {
-    "origin": "https://txttotrello.netlify.app"
+  "authorization": {
+    "serviceName": "Trello",
+    "url": "https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28"
   }
 }
