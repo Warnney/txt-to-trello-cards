@@ -136,24 +136,20 @@
             console.log('Token obtido:', token);
             processTxtData(data, token);
           } else {
-            t.authorize({
-              type: 'popup',
-              persist: true,
-              interactive: true,
-              scope: { read: true, write: true, account: false },
-              expiration: 'never',
-              success: function() {
-                return t.get('member', 'private', 'token').then(function(token) {
-                  console.log('Token obtido após autorização:', token);
-                  processTxtData(data, token);
-                });
-              },
-              error: function(err) {
-                console.error('Erro ao obter autorização:', err);
-                statusDiv.innerHTML = `<p style="color: red;">Erro ao obter autorização: ${err.message}</p>`;
+            t.popup({
+              title: 'Authorize Trello',
+              url: 'https://trello.com/1/authorize?expiration=never&name=TXT%20to%20Trello&scope=read,write&response_type=token&key=885bb454766dfaf8a17ac2eb82ce7a28',
+              height: 680,
+              callback: function(context) {
+                const token = context.token;
+                t.set('member', 'private', 'token', token);
+                processTxtData(data, token);
               }
             });
           }
+        }).catch(function(err) {
+          console.error('Erro ao obter autorização:', err);
+          statusDiv.innerHTML = `<p style="color: red;">Erro ao obter autorização: ${err.message}</p>`;
         });
       }
 
